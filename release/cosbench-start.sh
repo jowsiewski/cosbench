@@ -31,15 +31,30 @@ OSGI_CONFIG=conf/.$SERVICE_NAME
 
 TOMCAT_CONFIG=conf/$SERVICE_NAME-tomcat-server.xml
 
-TOOL="nc"
-TOOL_PARAMS="-i 0"
-
 #-------------------------------
 # MAIN
 #-------------------------------
 
 rm -f $BOOT_LOG
 mkdir -p log
+
+# query_osgi: send a command to the OSGi console and return the output.
+# Works with both GNU and OpenBSD netcat (Ubuntu 24.04 ships OpenBSD).
+# Falls back to bash /dev/tcp if nc is unavailable.
+query_osgi() {
+    local cmd="$1"
+    local host="$2"
+    local port="$3"
+    if command -v nc >/dev/null 2>&1; then
+        # -w 1: 1-second idle/connection timeout (portable across GNU & OpenBSD nc)
+        # timeout 2: hard kill safety net in case nc still hangs
+        timeout 2 bash -c "echo '$cmd' | nc -w 1 $host $port" 2>/dev/null
+    elif [ -e /dev/tcp ]; then
+        timeout 2 bash -c "exec 3<>/dev/tcp/$host/$port; echo '$cmd' >&3; cat <&3; exec 3>&-" 2>/dev/null
+    else
+        return 1
+    fi
+}
 
 echo "Launching osgi framwork ... "
 
@@ -60,27 +75,13 @@ echo "Booting cosbench $SERVICE_NAME ... "
 
 succ=1
 
-which $TOOL 1>&2 >/dev/null
-if [ $? -ne 0 ]; then
-	echo "No appropriate tool found to detect cosbench $SERVICE_NAME status."
-	attemps=60
-	while [ $attemps -gt 0 ]; do
-		attemps=`expr $attemps - 1`
-		echo -n "."
-		sleep 1
-	done
-	succ=2
-	echo
-	echo "Started cosbench $SERVICE_NAME!"
-else
-
 for module in $OSGI_BUNDLES
 do
         ready=0
         attempts=60
         while [ $ready -ne 1 ];
         do
-                echo "ss -s ACTIVE cosbench" | $TOOL $TOOL_PARAMS 0.0.0.0 $OSGI_CONSOLE_PORT | grep $module >> /dev/null
+                query_osgi "ss -s ACTIVE cosbench" 0.0.0.0 $OSGI_CONSOLE_PORT | grep $module >> /dev/null
                 if [ $? -ne 0 ];
                 then
                         attempts=`expr $attempts - 1`
@@ -101,7 +102,6 @@ do
                 fi
         done
 done
-fi
 
 if [ $succ -eq 0 ];
 then

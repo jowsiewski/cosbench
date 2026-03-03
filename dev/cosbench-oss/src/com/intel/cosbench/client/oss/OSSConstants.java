@@ -12,7 +12,7 @@ public interface OSSConstants {
 	// ENDPOINT
 	// --------------------------------------------------------------------------
 	String ENDPOINT_KEY = "endpoint";
-	String ENDPOINT_DEFAULT = "oss-cn-hangzhou.aliyuncs.com";// default is »ª¶«1
+	String ENDPOINT_DEFAULT = "oss-cn-hangzhou.aliyuncs.com";// default is Hangzhou region
 
 	// --------------------------------------------------------------------------
 	// AUTHENTICATION

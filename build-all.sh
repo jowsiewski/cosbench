@@ -162,5 +162,8 @@ for NAME in cosbench-log cosbench-log4j cosbench-castor cosbench-config \
 done
 
 echo ""
-echo "=== Build complete. Plugins in: $PLUGINS ==="
-ls "$PLUGINS"
+echo "--- Copying plugins to release/ ---"
+cp -r "$PLUGINS"/. "$ROOT/release/plugins/"
+echo ""
+echo "=== Build complete. Plugins in: $PLUGINS and release/plugins/ ==="
+ls "$ROOT/release/plugins/"

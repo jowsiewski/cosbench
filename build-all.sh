@@ -63,6 +63,9 @@ assemble() {
     for f in "$SRC_DIR"/*.properties "$SRC_DIR"/*.xml; do
         [ -f "$f" ] && cp "$f" "$OUT/" || true
     done
+    [ -d "$SRC_DIR/WEB-INF" ] && cp -r "$SRC_DIR/WEB-INF" "$OUT/" || true
+    [ -d "$SRC_DIR/resources" ] && cp -r "$SRC_DIR/resources" "$OUT/" || true
+    [ -f "$SRC_DIR/index.html" ] && cp "$SRC_DIR/index.html" "$OUT/" || true
 }
 
 mkdir -p "$PLUGINS"
@@ -125,19 +128,22 @@ COUCHBASE_JARS=$(find "$DEV/cosbench-couchbase" -name "*.jar" | tr '\n' ':')
 compile "cosbench-couchbase" "$LOG:$CFG:$API:$HTTP:$CORE:$OSGI_CP" "$COUCHBASE_JARS"
 
 echo ""
-echo "--- Layer 7: cosbench-driver, cosbench-core-web ---"
+echo "--- Layer 7: cosbench-driver, cosbench-controller, cosbench-core-web ---"
 KEYSTONE="$DEV/cosbench-keystone/bin"
 HTTPAUTH="$DEV/cosbench-httpauth/bin"
 SWAUTH="$DEV/cosbench-swauth/bin"
 MOCK="$DEV/cosbench-mock/bin"
-compile "cosbench-driver"   "$LOG:$CFG:$API:$HTTP:$CORE:$KEYSTONE:$HTTPAUTH:$SWAUTH:$MOCK:$OSGI_CP"
-compile "cosbench-core-web" "$LOG:$CFG:$API:$HTTP:$CORE:$OSGI_CP"
+compile "cosbench-driver"     "$LOG:$CFG:$API:$HTTP:$CORE:$KEYSTONE:$HTTPAUTH:$SWAUTH:$MOCK:$OSGI_CP"
+compile "cosbench-controller" "$LOG:$CFG:$API:$HTTP:$CORE:$OSGI_CP"
+compile "cosbench-core-web"   "$LOG:$CFG:$API:$HTTP:$CORE:$OSGI_CP"
 DRIVER="$DEV/cosbench-driver/bin"
+CONTROLLER="$DEV/cosbench-controller/bin"
 CORE_WEB="$DEV/cosbench-core-web/bin"
 
 echo ""
-echo "--- Layer 8: cosbench-driver-web ---"
-compile "cosbench-driver-web" "$LOG:$CFG:$API:$HTTP:$CORE:$DRIVER:$CORE_WEB:$OSGI_CP"
+echo "--- Layer 8: cosbench-driver-web, cosbench-controller-web ---"
+compile "cosbench-driver-web"     "$LOG:$CFG:$API:$HTTP:$CORE:$DRIVER:$CORE_WEB:$OSGI_CP"
+compile "cosbench-controller-web" "$LOG:$CFG:$API:$HTTP:$CORE:$CONTROLLER:$CORE_WEB:$OSGI_CP"
 
 echo ""
 echo "--- Assembling all bundles ---"
@@ -148,7 +154,8 @@ for NAME in cosbench-log cosbench-log4j cosbench-castor cosbench-config \
             cosbench-mock cosbench-s3 cosbench-swift cosbench-ampli \
             cosbench-oss cosbench-scality cosbench-ecs \
             cosbench-gcs cosbench-redis cosbench-couchbase \
-            cosbench-driver cosbench-core-web cosbench-driver-web; do
+            cosbench-driver cosbench-controller \
+            cosbench-core-web cosbench-driver-web cosbench-controller-web; do
     echo -n "  $NAME ... "
     assemble "$NAME"
     echo "OK"

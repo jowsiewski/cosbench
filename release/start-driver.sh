@@ -22,7 +22,7 @@
 SERVICE_NAME=driver
 VERSION=`cat VERSION`
 
-OSGI_BUNDLES="cosbench-log_${VERSION} cosbench-tomcat_${VERSION} cosbench-config_${VERSION} cosbench-http_${VERSION} cosbench-cdmi-util_${VERSION} cosbench-core_${VERSION} cosbench-core-web_${VERSION} cosbench-api_${VERSION} cosbench-mock_${VERSION} cosbench-ampli_${VERSION} cosbench-swift_${VERSION} cosbench-keystone_${VERSION} cosbench-httpauth_${VERSION} cosbench-s3_${VERSION} cosbench-redis_${VERSION} cosbench-couchbase_${VERSION} cosbench-oss_${VERSION} cosbench-gcs_${VERSION} cosbench-scality_${VERSION} cosbench-ecs_${VERSION} cosbench-driver_${VERSION} cosbench-driver-web_${VERSION}"
+OSGI_BUNDLES="cosbench-log_${VERSION} cosbench-tomcat_${VERSION} cosbench-config_${VERSION} cosbench-http_${VERSION} cosbench-cdmi-util_${VERSION} cosbench-core_${VERSION} cosbench-core-web_${VERSION} cosbench-api_${VERSION} cosbench-mock_${VERSION} cosbench-ampli_${VERSION} cosbench-swift_${VERSION} cosbench-keystone_${VERSION} cosbench-httpauth_${VERSION} cosbench-s3_${VERSION} cosbench-redis_${VERSION} cosbench-couchbase_${VERSION} cosbench-vector_${VERSION} cosbench-oss_${VERSION} cosbench-gcs_${VERSION} cosbench-scality_${VERSION} cosbench-ecs_${VERSION} cosbench-driver_${VERSION} cosbench-driver-web_${VERSION}"
 
 OSGI_CONSOLE_PORT=18089
 

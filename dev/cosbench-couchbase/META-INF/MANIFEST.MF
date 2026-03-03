@@ -1,0 +1,20 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Couchbase Storage Client Bundle
+Bundle-SymbolicName: cosbench-couchbase
+Bundle-Version: 0.4.2.0
+Bundle-Vendor: intel
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-ClassPath: .,
+ java-client-3.11.1.jar,
+ core-io-3.11.1.jar,
+ reactor-core-3.6.10.jar,
+ reactive-streams-1.0.4.jar,
+ jackson-databind-2.17.2.jar,
+ jackson-core-2.17.2.jar,
+ jackson-annotations-2.17.2.jar,
+ slf4j-api-1.7.36.jar
+Import-Package: com.intel.cosbench.api.storage,
+ com.intel.cosbench.api.context,
+ com.intel.cosbench.config,
+ com.intel.cosbench.log

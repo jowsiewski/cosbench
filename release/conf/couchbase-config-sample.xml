@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  COSBench sample workload for Couchbase.
+
+  Storage configuration parameters
+  ---------------------------------
+  host            — Couchbase cluster hostname or IP (default: localhost)
+  bucket          — Bucket name to benchmark (default: default)
+  username        — Cluster user with Data Read/Write permission (default: Administrator)
+  password        — User password (default: password)
+  connectTimeout  — Cluster connect + bucket ready timeout in ms (default: 10000)
+  kvTimeout       — Per-operation KV timeout in ms (default: 5000)
+  keySeparator    — Separator between container and object name in key (default: :)
+                    (only used when useScope=false)
+  collection      — Collection name within bucket/scope (default: _default)
+  useScope        — If true, maps COSBench "container" to a Couchbase scope and
+                    uses `collection` within that scope; key = object name only.
+                    If false, key = container + keySeparator + object, all in
+                    the default scope (default: false)
+
+  Single-node example:
+    config="host=127.0.0.1;bucket=mybucket;username=Administrator;password=password"
+
+  Couchbase Capella (cloud) example:
+    config="host=cb.<id>.cloud.couchbase.com;bucket=mybucket;username=user@example.com;password=<pass>;connectTimeout=15000"
+
+  Scope/collection mapping example:
+    config="host=127.0.0.1;bucket=mybucket;username=Administrator;password=password;useScope=true;collection=objects"
+-->
+<workload name="couchbase-sample" description="sample benchmark for Couchbase KV store">
+
+  <storage type="couchbase" config="host=127.0.0.1;bucket=default;username=Administrator;password=password" />
+
+  <workflow>
+
+    <workstage name="init">
+      <!-- Couchbase buckets and collections must be pre-created; init is a no-op -->
+      <work type="init" workers="1" config="containers=r(1,4)" />
+    </workstage>
+
+    <workstage name="prepare">
+      <work type="prepare" workers="4" config="containers=r(1,4);objects=r(1,1000);sizes=c(1)KB" />
+    </workstage>
+
+    <workstage name="main">
+      <!-- Mixed read/write workload: 70% read, 30% write, 16 workers, 300 s -->
+      <work name="main-mixed" workers="16" runtime="300">
+        <storage type="couchbase" config="host=127.0.0.1;bucket=default;username=Administrator;password=password" />
+        <operation type="read"  ratio="70" config="containers=u(1,4);objects=u(1,1000)" />
+        <operation type="write" ratio="30" config="containers=u(1,4);objects=u(1001,2000);sizes=c(1)KB" />
+      </work>
+    </workstage>
+
+    <workstage name="cleanup">
+      <work type="cleanup" workers="4" config="containers=r(1,4);objects=r(1,2000)" />
+    </workstage>
+
+    <workstage name="dispose">
+      <!-- dispose is a no-op for Couchbase (container = key prefix, not a managed resource) -->
+      <work type="dispose" workers="1" config="containers=r(1,4)" />
+    </workstage>
+
+  </workflow>
+
+</workload>

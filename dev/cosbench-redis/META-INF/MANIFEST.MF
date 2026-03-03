@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Redis Storage Client Bundle
 Bundle-SymbolicName: cosbench-redis
-Bundle-Version: 0.4.1.0
+Bundle-Version: 0.4.2.0
 Bundle-Vendor: intel
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ClassPath: .,
  jedis-3.10.0.jar,
  commons-pool2-2.11.1.jar,

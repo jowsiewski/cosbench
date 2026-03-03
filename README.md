@@ -11,7 +11,7 @@ COSBench now supports OpenStack* Swift, Amazon* S3, Amplidata v2.3, 2.5 and 3.1,
 Fork additions (jowsiewski/cosbench — branch: feature/kv-backends)
 -------------------------------------------------------------------
 
-This fork extends the original COSBench with two additional storage adapters not present upstream:
+This fork extends the original COSBench with four additional storage adapters not present upstream:
 
 ### Redis / Google Cloud Memorystore (`type="redis"`)
 

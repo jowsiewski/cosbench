@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  COSBench sample workload for Redis / Google Cloud Memorystore (Redis-compatible).
+
+  Storage configuration parameters
+  ---------------------------------
+  host          — Redis server hostname or IP (default: localhost)
+  port          — Redis server port (default: 6379;
+                  use 6378 for Memorystore with in-transit encryption)
+  password      — AUTH password, omit or leave empty if not required
+  database      — Logical DB index, 0-15 (Memorystore only supports 0)
+  timeout       — Socket connect/read timeout in ms (default: 30000)
+  ssl           — Enable TLS/SSL; set to true for Memorystore in-transit encryption
+  keySeparator  — Separator between container and object name in Redis key (default: :)
+  maxTotal      — Max total connections in pool per worker (default: 8)
+  maxIdle       — Max idle connections in pool (default: 8)
+  minIdle       — Min idle connections in pool (default: 0)
+
+  Standalone Redis example:
+    config="host=127.0.0.1;port=6379;timeout=30000"
+
+  Google Cloud Memorystore (in-transit encryption) example:
+    config="host=<memorystore-ip>;port=6378;ssl=true;timeout=30000"
+
+  Google Cloud Memorystore (AUTH + TLS) example:
+    config="host=<memorystore-ip>;port=6378;ssl=true;password=<auth-string>;timeout=30000"
+-->
+<workload name="redis-sample" description="sample benchmark for Redis / Google Cloud Memorystore">
+
+  <storage type="redis" config="host=127.0.0.1;port=6379;timeout=30000" />
+
+  <workflow>
+
+    <workstage name="init">
+      <work type="init" workers="1" config="containers=r(1,4)" />
+    </workstage>
+
+    <workstage name="prepare">
+      <work type="prepare" workers="4" config="containers=r(1,4);objects=r(1,1000);sizes=c(1)KB" />
+    </workstage>
+
+    <workstage name="main">
+      <!-- Mixed read/write workload: 70% read, 30% write, 16 workers, 300 s -->
+      <work name="main-mixed" workers="16" runtime="300">
+        <storage type="redis" config="host=127.0.0.1;port=6379;timeout=30000" />
+        <operation type="read"  ratio="70" config="containers=u(1,4);objects=u(1,1000)" />
+        <operation type="write" ratio="30" config="containers=u(1,4);objects=u(1001,2000);sizes=c(1)KB" />
+      </work>
+    </workstage>
+
+    <workstage name="cleanup">
+      <work type="cleanup" workers="4" config="containers=r(1,4);objects=r(1,2000)" />
+    </workstage>
+
+    <workstage name="dispose">
+      <work type="dispose" workers="1" config="containers=r(1,4)" />
+    </workstage>
+
+  </workflow>
+
+</workload>

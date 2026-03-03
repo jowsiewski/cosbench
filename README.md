@@ -8,6 +8,82 @@ Amazon S3 and Openstack* swift are well-known object storage solutions.
 COSBench now supports OpenStack* Swift, Amazon* S3, Amplidata v2.3, 2.5 and 3.1, Scality*, Ceph, CDMI, Google* Cloud Storage, Aliyun OSS as well as custom adaptors.
 
 
+Fork additions (jowsiewski/cosbench — branch: feature/kv-backends)
+-------------------------------------------------------------------
+
+This fork extends the original COSBench with two additional storage adapters not present upstream:
+
+### Redis / Google Cloud Memorystore (`type="redis"`)
+
+Benchmarks key-value workloads against any Redis-compatible store:
+
+- **Backends**: Redis CE, Redis Stack, Google Cloud Memorystore, Valkey, DragonflyDB
+- **Operations**: SET (write), GET (read), DEL (delete), SCAN (list), key prefix scan (cleanup)
+- **Auth**: password, TLS/SSL, logical database index
+- **Sample workload**: `release/conf/redis-config-sample.xml`
+
+```xml
+<storage type="redis" config="host=127.0.0.1;port=6379;timeout=30000" />
+```
+
+### Couchbase (`type="couchbase"`)
+
+Benchmarks key-value workloads against Couchbase Server:
+
+- **SDK**: Couchbase Java SDK 3.x (Java 8 compatible)
+- **Operations**: upsert (write), get (read), remove (delete)
+- **Auth**: username/password, TLS
+- **Sample workload**: `release/conf/couchbase-config-sample.xml`
+
+```xml
+<storage type="couchbase" config="host=127.0.0.1;bucket=default;username=Administrator;password=secret" />
+```
+
+### Vector Similarity Search (`type="vector"`)
+
+Benchmarks vector search workloads using the RediSearch-compatible `FT.*` command set:
+
+- **Backends**: Redis Stack, Redis 8+, Valkey + valkey-search module, DragonflyDB (v1.13+)
+- **Index algorithms**: HNSW (approximate, fast) and FLAT (exact, brute-force)
+- **Distance metrics**: COSINE, L2, IP (inner product)
+- **Write**: `HSET key embedding <float32 binary blob>` — synthetic vectors generated from object name (no external data required)
+- **Read**: `FT.SEARCH idx "*=>[KNN K @embedding $vec AS score]"` with DIALECT 2
+- **Configurable**: vector dimensionality, K neighbours, HNSW M / EF_CONSTRUCTION
+- **Sample workload**: `release/conf/vector-config-sample.xml`
+
+```xml
+<storage type="vector" config="host=127.0.0.1;port=6379;dim=128;algorithm=HNSW;distanceMetric=COSINE;knn=10" />
+```
+
+#### Vector adapter parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `host` | `localhost` | Server hostname or IP |
+| `port` | `6379` | Server port |
+| `password` | _(none)_ | AUTH password |
+| `ssl` | `false` | Enable TLS |
+| `indexName` | `cosbench-vec-idx` | RediSearch index name |
+| `keyPrefix` | `vec:` | HASH key prefix |
+| `vectorField` | `embedding` | HASH field holding the vector |
+| `dim` | `128` | Vector dimensionality (float32 components) |
+| `algorithm` | `HNSW` | `HNSW` or `FLAT` |
+| `distanceMetric` | `COSINE` | `COSINE`, `L2`, or `IP` |
+| `knn` | `10` | Neighbours returned per KNN search |
+| `hnswM` | `16` | HNSW bi-directional links per node |
+| `hnswEfConstruction` | `200` | HNSW candidate list size during build |
+| `randomSeed` | `42` | Seed for reproducible synthetic vectors |
+
+#### Prerequisites for vector benchmarking
+
+| Backend | Setup |
+|---|---|
+| Redis Stack | `docker run -p 6379:6379 redis/redis-stack-server:latest` |
+| Redis 8+ | No modules needed — native query engine built in |
+| Valkey | Load `valkey-search` module: `--loadmodule /path/to/valkey-search.so` |
+| DragonflyDB | `docker run -p 6379:6379 docker.dragonflydb.io/dragonflydb/dragonfly` (v1.13+) |
+
+
 Important Notice and Contact Information
 ----------------------------------------
 

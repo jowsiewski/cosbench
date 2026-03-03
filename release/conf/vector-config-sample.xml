@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  COSBench sample workload for Vector Similarity Search (VSS).
+
+  Compatible backends (all implement RediSearch-compatible FT.* commands):
+    - Redis Stack (Redis + RediSearch module bundled)
+    - Redis 8+    (native query engine, no module required)
+    - Valkey      (load valkey-search module: --loadmodule /path/to/valkey-search.so)
+    - DragonflyDB (native VSS since v1.13, no module required)
+
+  Storage configuration parameters
+  ---------------------------------
+  host             — Server hostname or IP (default: localhost)
+  port             — Server port (default: 6379)
+  password         — AUTH password, omit or leave empty if not required
+  database         — Logical DB index (default: 0)
+  timeout          — Socket connect/read timeout in ms (default: 30000)
+  ssl              — Enable TLS/SSL (default: false)
+  maxTotal         — Max total connections in pool per worker (default: 8)
+  maxIdle          — Max idle connections in pool (default: 8)
+  minIdle          — Min idle connections in pool (default: 0)
+
+  Vector index parameters
+  -----------------------
+  indexName        — RediSearch index name (default: cosbench-vec-idx)
+  keyPrefix        — HASH key prefix; key format: <keyPrefix><container>:<object> (default: vec:)
+  vectorField      — HASH field that holds the binary float32 vector (default: embedding)
+  dim              — Vector dimensionality, number of float32 components (default: 128)
+  algorithm        — Index algorithm: FLAT (exact) or HNSW (approximate) (default: HNSW)
+  distanceMetric   — Distance metric: COSINE, L2, or IP (inner product) (default: COSINE)
+  knn              — Number of nearest neighbours returned per search (default: 10)
+  hnswM            — HNSW: bi-directional links per node (default: 16, ignored for FLAT)
+  hnswEfConstruction — HNSW: candidate list size during index build (default: 200, ignored for FLAT)
+  randomSeed       — Seed for synthetic vector generation; fixed seed = reproducible run (default: 42)
+
+  Operation semantics
+  -------------------
+  init    (createContainer) — FT.CREATE index; drops any existing index with the same name first
+  prepare (createObject)    — HSET <key> <vectorField> <float32 binary blob>; vectors are synthetic
+  main    (read)            — FT.SEARCH idx "*=>[KNN k @field $vec]" using a vector from the object name
+  main    (write)           — HSET (same as prepare, used for online-insert benchmarks)
+  cleanup (deleteObject)    — DEL individual HASH documents
+  dispose (deleteContainer) — FT.DROPINDEX (removes the index)
+
+  Example configurations
+  ----------------------
+  Redis Stack / DragonflyDB (no auth):
+    config="host=127.0.0.1;port=6379;timeout=30000"
+
+  Valkey with valkey-search (auth enabled):
+    config="host=127.0.0.1;port=6379;password=secret;timeout=30000"
+
+  High-dimension FLAT index (e.g. OpenAI text-embedding-3-small = 1536 dims):
+    config="host=127.0.0.1;port=6379;dim=1536;algorithm=FLAT;distanceMetric=COSINE"
+-->
+<workload name="vector-sample" description="Vector Similarity Search benchmark (Redis Stack / Valkey / DragonflyDB)">
+
+  <storage type="vector" config="host=127.0.0.1;port=6379;timeout=30000;dim=128;algorithm=HNSW;knn=10" />
+
+  <workflow>
+
+    <!-- Create the vector index -->
+    <workstage name="init">
+      <work type="init" workers="1" config="containers=r(1,1)" />
+    </workstage>
+
+    <!-- Insert synthetic 128-dim float32 vectors -->
+    <workstage name="prepare">
+      <work type="prepare" workers="4" config="containers=r(1,1);objects=r(1,10000);sizes=c(512)B" />
+    </workstage>
+
+    <!-- Mixed KNN search (read) and vector upsert (write) -->
+    <workstage name="main">
+      <work name="main-mixed" workers="8" runtime="300">
+        <storage type="vector" config="host=127.0.0.1;port=6379;timeout=30000;dim=128;algorithm=HNSW;knn=10" />
+        <operation type="read"  ratio="80" config="containers=u(1,1);objects=u(1,10000)" />
+        <operation type="write" ratio="20" config="containers=u(1,1);objects=u(10001,15000);sizes=c(512)B" />
+      </work>
+    </workstage>
+
+    <!-- Delete inserted vectors -->
+    <workstage name="cleanup">
+      <work type="cleanup" workers="4" config="containers=r(1,1);objects=r(1,15000)" />
+    </workstage>
+
+    <!-- Drop the vector index -->
+    <workstage name="dispose">
+      <work type="dispose" workers="1" config="containers=r(1,1)" />
+    </workstage>
+
+  </workflow>
+
+</workload>

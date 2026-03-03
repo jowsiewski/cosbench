@@ -83,6 +83,55 @@ Benchmarks vector search workloads using the RediSearch-compatible `FT.*` comman
 | Valkey | Load `valkey-search` module: `--loadmodule /path/to/valkey-search.so` |
 | DragonflyDB | `docker run -p 6379:6379 docker.dragonflydb.io/dragonflydb/dragonfly` (v1.13+) |
 
+### pgvector — PostgreSQL Vector Extension (`type="pgvector"`)
+
+Benchmarks vector similarity search workloads against PostgreSQL with the [pgvector](https://github.com/pgvector/pgvector) extension:
+
+- **Index algorithms**: HNSW (pgvector 0.5.0+, approximate) and IVFFlat (exact partitioning)
+- **Distance metrics**: cosine (`<=>`), L2 (`<->`), inner product (`<#>`)
+- **Write**: `INSERT INTO table (id, embedding) VALUES (?, ?::vector)` — upsert on conflict
+- **Read**: `SELECT id FROM table ORDER BY embedding <op> ?::vector LIMIT knn` (KNN search)
+- **Configurable**: vector dimensionality, HNSW M / ef_construction, IVFFlat lists, query-time probes, K neighbours
+- **Sample workload**: `release/conf/pgvector-config-sample.xml`
+
+```xml
+<storage type="pgvector" config="host=127.0.0.1;port=5432;database=postgres;username=postgres;password=cosbench;dim=128;indexType=hnsw;distanceMetric=cosine;knn=10" />
+```
+
+#### pgvector adapter parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `host` | `localhost` | PostgreSQL hostname or IP |
+| `port` | `5432` | PostgreSQL port |
+| `database` | `postgres` | Database name |
+| `username` | `postgres` | DB user |
+| `password` | _(empty)_ | DB password |
+| `ssl` | `false` | Enable TLS |
+| `timeout` | `30` | JDBC socket timeout (seconds, 0 = none) |
+| `poolSize` | `4` | JDBC connection pool size per worker |
+| `schema` | `public` | Schema holding the vector tables |
+| `idColumn` | `id` | Primary-key column name |
+| `vectorColumn` | `embedding` | Vector column name |
+| `dim` | `128` | Vector dimensionality (float32 components) |
+| `indexType` | `hnsw` | `hnsw` or `ivfflat` |
+| `distanceMetric` | `cosine` | `cosine`, `l2`, or `ip` |
+| `hnswM` | `16` | HNSW: max connections per layer |
+| `hnswEfConstruction` | `64` | HNSW: candidate list size during build |
+| `ivfflatLists` | `100` | IVFFlat: number of inverted lists |
+| `probes` | `10` | Query-time probes (`hnsw.ef_search` or `ivfflat.probes`) |
+| `knn` | `10` | Neighbours returned per KNN search |
+| `randomSeed` | `42` | Seed for reproducible synthetic vectors |
+
+#### Prerequisites for pgvector benchmarking
+
+```bash
+docker run -d --name pgvector-demo \
+  -e POSTGRES_PASSWORD=cosbench \
+  -p 5432:5432 \
+  pgvector/pgvector:pg16
+```
+
 
 Important Notice and Contact Information
 ----------------------------------------

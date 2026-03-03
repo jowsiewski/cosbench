@@ -130,6 +130,9 @@ compile "cosbench-couchbase" "$LOG:$CFG:$API:$HTTP:$CORE:$OSGI_CP" "$COUCHBASE_J
 VECTOR_JARS=$(find "$DEV/cosbench-vector" -name "*.jar" | tr '\n' ':')
 compile "cosbench-vector"    "$LOG:$CFG:$API:$HTTP:$CORE:$OSGI_CP" "$VECTOR_JARS"
 
+PGVECTOR_JARS=$(find "$DEV/cosbench-pgvector" -name "*.jar" | tr '\n' ':')
+compile "cosbench-pgvector"  "$LOG:$CFG:$API:$HTTP:$CORE:$OSGI_CP" "$PGVECTOR_JARS"
+
 echo ""
 echo "--- Layer 7: cosbench-driver, cosbench-controller, cosbench-core-web ---"
 KEYSTONE="$DEV/cosbench-keystone/bin"
@@ -156,7 +159,7 @@ for NAME in cosbench-log cosbench-log4j cosbench-castor cosbench-config \
             cosbench-keystone cosbench-httpauth cosbench-swauth \
             cosbench-mock cosbench-s3 cosbench-swift cosbench-ampli \
             cosbench-oss cosbench-scality cosbench-ecs \
-            cosbench-gcs cosbench-redis cosbench-couchbase cosbench-vector \
+            cosbench-gcs cosbench-redis cosbench-couchbase cosbench-vector cosbench-pgvector \
             cosbench-driver cosbench-controller \
             cosbench-core-web cosbench-driver-web cosbench-controller-web; do
     echo -n "  $NAME ... "

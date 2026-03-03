@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  COSBench sample workload for pgvector (PostgreSQL vector extension).
+
+  Prerequisites
+  -------------
+  1. PostgreSQL 13+ with pgvector extension installed:
+       CREATE EXTENSION IF NOT EXISTS vector;
+  2. A database and user accessible from the COSBench driver host.
+  3. pgvector 0.5.0+ for HNSW support (0.4.x supports IVFFlat only).
+
+  Quick start (Docker):
+    docker run -d --name pgvector-demo \
+      -e POSTGRES_PASSWORD=cosbench \
+      -p 5432:5432 \
+      pgvector/pgvector:pg16
+
+  Storage configuration parameters
+  ---------------------------------
+  host             — PostgreSQL hostname or IP (default: localhost)
+  port             — PostgreSQL port (default: 5432)
+  database         — Database name (default: postgres)
+  username         — DB user (default: postgres)
+  password         — DB password (default: empty)
+  ssl              — Enable TLS/SSL (default: false)
+  timeout          — JDBC socket timeout in seconds, 0 = no timeout (default: 30)
+  poolSize         — JDBC connection pool size per worker (default: 4)
+  schema           — Schema that holds vector tables (default: public)
+  idColumn         — Primary key column name (default: id)
+  vectorColumn     — Vector column name (default: embedding)
+
+  Vector index parameters
+  -----------------------
+  dim              — Vector dimensionality, number of float32 components (default: 128)
+  indexType        — Index algorithm: hnsw or ivfflat (default: hnsw)
+  distanceMetric   — Distance metric: cosine, l2, or ip (inner product) (default: cosine)
+  hnswM            — HNSW: max connections per layer, higher = better recall (default: 16)
+  hnswEfConstruction — HNSW: candidate list size during index build (default: 64)
+  ivfflatLists     — IVFFlat: number of inverted lists (default: 100)
+  probes           — Query-time probes: hnsw.ef_search or ivfflat.probes (default: 10)
+  knn              — Number of nearest neighbours returned per search (default: 10)
+  randomSeed       — Seed for synthetic vector generation; fixed seed = reproducible run (default: 42)
+
+  Operation semantics
+  -------------------
+  init    (createContainer) — CREATE TABLE <container>(id TEXT PK, embedding vector(dim))
+                              + CREATE INDEX USING hnsw/ivfflat
+  prepare (createObject)    — INSERT INTO <table> (id, embedding) VALUES (?, ?::vector)
+                              Vectors are synthetic — generated from object name + randomSeed.
+  main    (read)            — SELECT id FROM <table> ORDER BY embedding <op> ?::vector LIMIT knn
+  main    (write)           — INSERT ... ON CONFLICT UPDATE (upsert; same as prepare)
+  cleanup (deleteObject)    — DELETE FROM <table> WHERE id = ?
+  dispose (deleteContainer) — DROP TABLE IF EXISTS <container>
+
+  Example configurations
+  ----------------------
+  Local Docker (no auth, HNSW cosine, 128 dims):
+    config="host=127.0.0.1;port=5432;database=postgres;username=postgres;password=cosbench"
+
+  IVFFlat with L2 distance (1536 dims, e.g. OpenAI text-embedding-3-small):
+    config="host=127.0.0.1;port=5432;database=postgres;username=postgres;password=cosbench;dim=1536;indexType=ivfflat;distanceMetric=l2;ivfflatLists=200;probes=20;knn=10"
+-->
+<workload name="pgvector-sample" description="pgvector (PostgreSQL) Vector Similarity Search benchmark">
+
+  <storage type="pgvector" config="host=127.0.0.1;port=5432;database=postgres;username=postgres;password=cosbench;dim=128;indexType=hnsw;distanceMetric=cosine;knn=10" />
+
+  <workflow>
+
+    <!-- Create vector table + HNSW index -->
+    <workstage name="init">
+      <work type="init" workers="1" config="containers=r(1,1)" />
+    </workstage>
+
+    <!-- Insert 10 000 synthetic 128-dim float32 vectors -->
+    <workstage name="prepare">
+      <work type="prepare" workers="4" config="containers=r(1,1);objects=r(1,10000);sizes=c(512)B" />
+    </workstage>
+
+    <!-- Mixed KNN search (read) and vector upsert (write) for 5 minutes -->
+    <workstage name="main">
+      <work name="main-mixed" workers="8" runtime="300">
+        <storage type="pgvector" config="host=127.0.0.1;port=5432;database=postgres;username=postgres;password=cosbench;dim=128;indexType=hnsw;distanceMetric=cosine;knn=10" />
+        <operation type="read"  ratio="80" config="containers=u(1,1);objects=u(1,10000)" />
+        <operation type="write" ratio="20" config="containers=u(1,1);objects=u(10001,15000);sizes=c(512)B" />
+      </work>
+    </workstage>
+
+    <!-- Delete inserted vectors -->
+    <workstage name="cleanup">
+      <work type="cleanup" workers="4" config="containers=r(1,1);objects=r(1,15000)" />
+    </workstage>
+
+    <!-- Drop vector table -->
+    <workstage name="dispose">
+      <work type="dispose" workers="1" config="containers=r(1,1)" />
+    </workstage>
+
+  </workflow>
+
+</workload>

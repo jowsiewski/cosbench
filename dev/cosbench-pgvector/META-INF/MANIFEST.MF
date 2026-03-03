@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: pgvector Storage Client Bundle
+Bundle-SymbolicName: cosbench-pgvector
+Bundle-Version: 0.4.2.0
+Bundle-Vendor: intel
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-ClassPath: .,
+ postgresql-42.7.7.jar
+Import-Package: com.intel.cosbench.api.storage,
+ com.intel.cosbench.api.context,
+ com.intel.cosbench.config,
+ com.intel.cosbench.log
